@@ -1,8 +1,7 @@
 #pragma once
 #include <stdint.h>
-namespace MatTime
+namespace MatClock
 {
-    inline volatile uint32_t CurrentTime = 0;
     void init();
 } // namespace MatTime
 

@@ -1,7 +1,6 @@
 #include "message.h"
 #include "infrared.h"
-#include "usart.h"
-#include "time.h"
+#include <time.h>
 #include <cstdlib>
 namespace MatMessage
 {
@@ -14,26 +13,27 @@ namespace MatMessage
     };
 
     ReceiveState currentReceiveState = ReceiveState::Type;
-    Message currentMessage = {MessageType::Time, 0, 0, (uint8_t *)std::malloc(sizeof(uint8_t) * MAX_MESSAGE_LENGTH)};
+    MessageHeader currentMessage = {MessageType::Time, 0, 0};
+    uint8_t currentMessageData[MAX_MESSAGE_LENGTH];
     uint8_t bytesReceived = 0;
     uint32_t lastRecievedTime = 0;
 
-    void send(Message &msg)
+    void send(MessageHeader &msg, uint8_t* data)
     {
         // send the type
-        MatInfrared::transmitChar(static_cast<uint8_t>(msg.type));
+        sendCharacter(static_cast<uint8_t>(msg.type));
 
         // send the length
-        MatInfrared::transmitChar(msg.length);
+        sendCharacter(msg.length);
 
         // send the checksum
-        MatInfrared::transmitChar(msg.checksum >> 8);
-        MatInfrared::transmitChar(msg.checksum & 0xFF);
+        sendCharacter(msg.checksum >> 8);
+        sendCharacter(msg.checksum & 0xFF);
 
         // send the data
         for (uint8_t i = 0; i < msg.length; i++)
         {
-            MatInfrared::transmitChar(msg.data[i]);
+            sendCharacter(data[i]);
         }
     }
 
@@ -47,14 +47,8 @@ namespace MatMessage
      *
      *    @return None
      */
-    void checkForMessages()
+    void checkForMessages(uint8_t data)
     {
-        uint8_t data = 0;
-        if (!UART_tryGetData(data))
-        {
-            return;
-        }
-
         if (MatTime::CurrentTime - lastRecievedTime > MESSAGE_TIMEOUT)
         {
             currentReceiveState = ReceiveState::Type;
@@ -101,13 +95,13 @@ namespace MatMessage
             break;
 
         case ReceiveState::Data:
-            currentMessage.data[bytesReceived] = data;
+            currentMessageData[bytesReceived] = data;
             bytesReceived++;
             if (bytesReceived == currentMessage.length)
             {
                 if (onMessageReceived != 0)
                 {
-                    onMessageReceived(currentMessage);
+                    onMessageReceived(currentMessage, currentMessageData);
                 }
                 currentReceiveState = ReceiveState::Type;
             }

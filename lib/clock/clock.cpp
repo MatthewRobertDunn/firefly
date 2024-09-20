@@ -1,8 +1,9 @@
-#include "time.h"
+#include <time.h>
+#include <clock.h>
 #include "ch32v003fun.h"
 constexpr uint32_t PRESCALER = (24000000 / (256 * 50)) - 1;
 
-namespace MatTime
+namespace MatClock
 {
     void init()
     {
