@@ -1,7 +1,5 @@
 #include "message.h"
-#include "infrared.h"
 #include <time.h>
-#include <cstdlib>
 namespace MatMessage
 {
     enum class ReceiveState : uint8_t
