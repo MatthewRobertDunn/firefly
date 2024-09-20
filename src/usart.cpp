@@ -8,7 +8,7 @@
 
 #if defined (UART_MODE_RX)
     static volatile uint8_t uart_rxHead = 0, uart_rxTail = 0;
-    static volatile uint16_t lastRXerrorFlag = 0;
+    //static volatile uint8_t lastRXerrorFlag = 0;
 #endif
 
 void UART_init()
@@ -45,47 +45,45 @@ void UART_init()
 
 #if defined (UART_MODE_RX)
 /**
- * @brief  return byte from ringbuffer  
+ * @brief  return byte from ringbuffer. Data is placed in data
  * 
- * @return uint16_t l	lower byte:  received byte from ringbuffer
-          				higher byte: last receive error
+ * @return true if data available, false otherwise
  */
-uint16_t UART_getc(void)
+bool UART_tryGetData(uint8_t& data)
 {    
-    uint8_t tmp8, data;
+    uint8_t tmp8;
 
-    if ( uart_rxHead == uart_rxTail ) return UART_NO_DATA;
+    if ( uart_rxHead == uart_rxTail )
+		return false;
 
     tmp8 = (uart_rxTail + 1) & UART_RX_BF_MASK;
     uart_rxTail = tmp8; 
     
     data = uart_rx_bf[tmp8];
     
-    return (lastRXerrorFlag | data);
+    return true;
 }
 #endif
 
 extern "C" void USART1_IRQHandler(void)
 {
 	uint16_t status = USART1->STATR;
-	uint16_t lastErr = 0;
 	uint8_t tmp8, data;
 	
 	// check for errors and store the flags
-	if (status & UART_IT_ERROR_MASK)
-	{
-		lastErr = (status & UART_IT_ERROR_MASK)<<8;
-	}
+	//lastRXerrorFlag = (status & UART_IT_ERROR_MASK);
+	
 #if defined (UART_MODE_RX)
 	if (status & UART_IT_RXC_ENABLE)  // byte received, the same bit as in CTRL1
 	{
 		data = USART1->DATAR;
 		tmp8 = (uart_rxHead + 1) & UART_RX_BF_MASK;
-		if (tmp8 == uart_rxTail)	lastErr |= UART_ERR_RXBUF_OVERFLOW;
+		//if (tmp8 == uart_rxTail)	
+		//	lastRXerrorFlag |= UART_ERR_RXBUF_OVERFLOW;
 		uart_rxHead = tmp8;
 		uart_rx_bf[tmp8] = data;
 	}
-	lastRXerrorFlag = lastErr & 0xFF00;
+
 #endif
 #if defined(UART_MODE_TX)
 	if (status & UART_IT_TXE_ENABLE)  // tx empty, the same bit as in CTRL1

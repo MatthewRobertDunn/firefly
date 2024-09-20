@@ -1,10 +1,11 @@
 #include "ch32v003fun.h"
 #include "infrared.h"
+#include "stdint.h"
 namespace MatInfrared
 {
 
     // Transmist a single character, bit at a time, with 1 start bit, and 1 stop bit
-    void transmitChar(unsigned char c)
+    void transmitChar(uint8_t c)
     {
         // transmit the start bit
         transmitZero();

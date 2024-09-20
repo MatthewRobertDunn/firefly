@@ -3,6 +3,7 @@
 #include "ledcontroller.h"
 #include "usart.h"
 #include "time.h"
+#include "message.h"
 void loop();
 
 // the setup function runs once when you press reset or power the board
@@ -12,14 +13,13 @@ int main()
   MatTime::init();
   UART_init();
   MatLed::init();
-  
 
   while (true)
   {
     auto startTime = MatTime::CurrentTime;
     loop();
     // Spin until we've used up all the time
-    
+
     while (startTime == MatTime::CurrentTime)
     {
       Delay_Us(100);
@@ -30,19 +30,19 @@ int main()
 // the loop function runs over and over again forever
 void loop()
 {
-  /*MatInfrared::transmitChar('H');
-  MatInfrared::transmitChar('e');
-  MatInfrared::transmitChar('l');
-  MatInfrared::transmitChar('l');
-  MatInfrared::transmitChar('o');
-  MatInfrared::transmitChar(' ');
-  MatInfrared::transmitChar('W');
-  MatInfrared::transmitChar('o');
-  MatInfrared::transmitChar('r');
-  MatInfrared::transmitChar('l');
-  MatInfrared::transmitChar('d');
-  MatInfrared::transmitChar('!');
-  MatInfrared::transmitChar('!');
-  */
-  MatLed::setColor(MatTime::CurrentTime % 255,0,0); 
+  MatLed::setColor(MatTime::CurrentTime % 255, 0, 0);
+
+  MatMessage::Message msg;
+  uint8_t data[4] =
+      {(uint8_t)(MatTime::CurrentTime & 0xFF000000 >> 24),
+       (uint8_t)(MatTime::CurrentTime & 0x00FF0000 >> 16),
+       (uint8_t)(MatTime::CurrentTime & 0x0000FF00 >> 8),
+       (uint8_t)(MatTime::CurrentTime & 0x000000FF)};
+  msg.data = data;
+  msg.type = MatMessage::MessageType::Time;
+  msg.length = 4;
+  msg.checksum = 0;
+  MatMessage::send(msg);
+
+  MatMessage::checkForMessages();
 }
