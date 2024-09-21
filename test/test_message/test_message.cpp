@@ -34,9 +34,7 @@ void test_message()
     // send message checksum
     MatMessage::checkForMessages(static_cast<uint8_t>(0xAA));
     MatMessage::checkForMessages(static_cast<uint8_t>(0xFF));
-
-    printf("Hello\r\n");
-
+    
     // send message data
     MatMessage::checkForMessages(static_cast<uint8_t>(0x00));
     MatMessage::checkForMessages(static_cast<uint8_t>(0x01));

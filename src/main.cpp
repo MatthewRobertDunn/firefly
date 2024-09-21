@@ -5,6 +5,7 @@
 #include <time.h>
 #include <clock.h>
 #include <message.h>
+#include <crc16.h>
 void loop();
 
 // the setup function runs once when you press reset or power the board
@@ -44,6 +45,11 @@ void loop()
   msg.length = 4;
   msg.checksum = 0;
   MatMessage::send(msg,&data[0]);
+
+  auto crc = MatCrc::crc16initial(0xff);
+  crc = MatCrc::crc16update(0xAA, crc);
+
+  MatMessage::send(msg, (uint8_t*)&crc);
 
   //MatMessage::checkForMessages();
 }
