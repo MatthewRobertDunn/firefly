@@ -43,7 +43,7 @@ void loop()
   
   msg.type = MatMessage::MessageType::Time;
   msg.length = 4;
-  msg.checksum = 0;
+  msg.receivedChecksum = 0;
   MatMessage::send(msg,&data[0]);
 
   auto crc = MatCrc::crc16initial(0xff);

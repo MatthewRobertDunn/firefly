@@ -1,13 +1,14 @@
 #include "message.h"
 #include <time.h>
+#include <crc16.h>
 namespace MatMessage
 {
     enum class ReceiveState : uint8_t
     {
         Type = 1,
         Length = 2,
-        Checksum = 3,
-        Data = 4,
+        Data = 3,
+        Checksum = 4,
     };
 
     ReceiveState currentReceiveState = ReceiveState::Type;
@@ -16,23 +17,26 @@ namespace MatMessage
     uint8_t bytesReceived = 0;
     uint32_t lastRecievedTime = 0;
 
-    void send(MessageHeader &msg, uint8_t* data)
+    void send(MessageHeader &msg, uint8_t *data)
     {
         // send the type
-        sendCharacter(static_cast<uint8_t>(msg.type));
+        auto byte = static_cast<uint8_t>(msg.type);
+        sendCharacter(byte);
+        uint16_t crc = MatCrc::crc16initial(byte);
 
         // send the length
         sendCharacter(msg.length);
-
-        // send the checksum
-        sendCharacter(msg.checksum >> 8);
-        sendCharacter(msg.checksum & 0xFF);
+        crc = MatCrc::crc16update(msg.length, crc);
 
         // send the data
         for (uint8_t i = 0; i < msg.length; i++)
         {
             sendCharacter(data[i]);
+            crc = MatCrc::crc16update(data[i], crc);
         }
+        // send the checksum
+        sendCharacter(crc >> 8);
+        sendCharacter(crc & 0xFF);
     }
 
     /**
@@ -63,6 +67,7 @@ namespace MatMessage
                 return; // Invalid message type, keep waiting
             }
             currentMessage.type = static_cast<MessageType>(data);
+            currentMessage.calculatedChecksum = MatCrc::crc16initial(data);
             currentReceiveState = ReceiveState::Length;
             break;
 
@@ -74,34 +79,37 @@ namespace MatMessage
                 return;
             }
             currentMessage.length = data;
-            currentReceiveState = ReceiveState::Checksum;
+            currentMessage.calculatedChecksum = MatCrc::crc16update(data, currentMessage.calculatedChecksum);
+            currentReceiveState = ReceiveState::Data;
             break;
 
+        case ReceiveState::Data:
+            currentMessageData[bytesReceived] = data;
+            currentMessage.calculatedChecksum = MatCrc::crc16update(data, currentMessage.calculatedChecksum);
+            bytesReceived++;
+            if (bytesReceived == currentMessage.length)
+            {
+                bytesReceived = 0;
+                currentReceiveState = ReceiveState::Checksum;
+            }
+            break;
         case ReceiveState::Checksum:
             if (bytesReceived == 0)
             {
-                currentMessage.checksum = data << 8;
+                currentMessage.receivedChecksum = data << 8;
                 bytesReceived++;
                 return;
             }
             else if (bytesReceived == 1)
             {
-                currentMessage.checksum |= data;
-                currentReceiveState = ReceiveState::Data;
+                currentMessage.receivedChecksum |= data;
+                currentReceiveState = ReceiveState::Type;
                 bytesReceived = 0;
-            }
-            break;
 
-        case ReceiveState::Data:
-            currentMessageData[bytesReceived] = data;
-            bytesReceived++;
-            if (bytesReceived == currentMessage.length)
-            {
-                if (onMessageReceived != 0)
+                if(currentMessage.receivedChecksum == currentMessage.calculatedChecksum)
                 {
                     onMessageReceived(currentMessage, currentMessageData);
                 }
-                currentReceiveState = ReceiveState::Type;
             }
             break;
         }

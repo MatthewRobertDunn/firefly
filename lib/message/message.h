@@ -15,7 +15,8 @@ namespace MatMessage
     {
         MessageType type;
         uint8_t length;
-        uint16_t checksum;
+        uint16_t receivedChecksum;
+        uint16_t calculatedChecksum;
     };
 
 
