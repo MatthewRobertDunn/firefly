@@ -47,7 +47,7 @@ namespace MatRgb
 
     void init()
     {
-        //funGpioInitA();
+        funGpioInitA();
         // initialize digital pin as a push-pull output
         funPinMode(WS2812_PIN, FUN_OUTPUT);
     }

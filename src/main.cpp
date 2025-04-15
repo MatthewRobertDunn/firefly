@@ -7,30 +7,21 @@
 #include <crc16.h>
 #include "rgb.h"
 #include "ch32v003fun.h"
+#include "animations.h"
 void loop();
 
 // the setup function runs once when you press reset or power the board
 int main()
 {
-   SystemInit();
-  //MatClock::init();
-  //UART_init();
-  funGpioInitAll(); 
+  SystemInit();
+  MatClock::init();
+  // UART_init();
   MatRgb::init();
-  //MatRgb::FrameBuffer[0] = 0xFF;
-  //MatRgb::FrameBuffer[17] = 0xFF;
+  MatAnimations::init();
 
   while (true)
   {
-    MatRgb::draw();
-    MatRgb::rotate();
-    Delay_Ms(100);
-  }
-}
-
-
-/**
- *  auto startTime = MatTime::CurrentTime;
+    auto startTime = MatTime::CurrentTime;
     loop();
     // Spin until we've used up all the time
 
@@ -38,11 +29,17 @@ int main()
     {
       Delay_Us(100);
     }
- */
+  }
+}
 
 // the loop function runs over and over again forever
 void loop()
 {
+
+  MatAnimations::tick();
+  MatRgb::draw();
+
+
   // MatLed::setColor(MatTime::CurrentTime % 255, 0, 0);
 
   // MatMessage::MessageHeader msg;
@@ -51,7 +48,7 @@ void loop()
   //      (uint8_t)(MatTime::CurrentTime & 0x00FF0000 >> 16),
   //      (uint8_t)(MatTime::CurrentTime & 0x0000FF00 >> 8),
   //      (uint8_t)(MatTime::CurrentTime & 0x000000FF)};
-  
+
   // msg.type = MatMessage::MessageType::Time;
   // msg.length = 4;
   // msg.receivedChecksum = 0;
